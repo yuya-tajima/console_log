@@ -46,8 +46,12 @@ if ( ! function_exists('console_log') ) {
       return;
     }
 
-    if( ! file_exists( $debug_log ) && ! is_writable( $debug_log ) ){
-      return;
+    if( ! file_exists( $debug_log ) ){
+        if ( touch( $debug_log ) ) {
+            chmod( $debug_log, 0666);
+        } else {
+            return;
+        }
     }
 
     ob_start();
