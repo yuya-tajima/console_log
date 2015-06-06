@@ -2,7 +2,7 @@
 /*
 Plugin Name: Console Log
 Description: store the var_dump results as a text file.
-Version: 0.4
+Version: 0.5
 Author: Yuya Tajima
 */
 
@@ -29,6 +29,11 @@ if ( ! function_exists('console_log') ) {
       }
 
       $debug_log = include( $debug_path_file );
+    }
+
+    if ( ! file_exists( $debug_log ) ) {
+      echo 'Debug log File does not exist.' . PHP_EOL;
+      return;
     }
 
     $file_size = filesize( $debug_log );
