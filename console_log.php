@@ -169,13 +169,19 @@ EOD;
         $string .= _getStringFromNotString( $v );
       }
     } elseif ( is_object( $arg ) ) {
-      $string .= ' (class) ' . get_class( $arg ) ;
+      $string .= ' (class)' . get_class( $arg ) ;
     } elseif ( is_bool( $arg ) ) {
       if ( $arg ) {
         $string .= ' (bool)true';
       } else {
         $string .= ' (bool)false';
       }
+    } elseif ( is_resource( $arg ) ) {
+        $string .= ' (resource)' . get_resource_type( $arg ) ;
+    } elseif ( is_null( $arg ) ) {
+        $string .= ' (NULL)';
+    } elseif ( is_int( $arg ) || is_float( $arg ) ) {
+        $string .= ' (int|float)' . (string) $arg;
     } else {
       if ( $arg === '' ) {
         $string .=  ' \'empty string\'';
