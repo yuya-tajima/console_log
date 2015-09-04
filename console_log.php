@@ -32,7 +32,7 @@ if ( ! function_exists( 'console_log' ) ) {
     }
 
     $defaults = array(
-      'any_time' => false,
+      'any_time' => true,
       'wp_ajax'  => true,
       'index'    => 3,
       'echo'     => false,
