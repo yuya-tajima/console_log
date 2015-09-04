@@ -186,7 +186,11 @@ EOD;
       if ( $arg === '' ) {
         $string .=  ' \'empty string\'';
       } else {
-        $string .=  ' '. mb_strimwidth( $arg, 0, 200, '...' );
+        if ( function_exists( 'mb_strimwidth' ) ) {
+          $string .=  ' '. mb_strimwidth( $arg, 0, 200, '...', 'UTF-8' );
+        } else {
+          $string .=  ' '. substr( $arg, 0, 200 ) . '...';
+        }
       }
     }
 
