@@ -2,7 +2,7 @@
 /*
 Plugin Name: Console Log
 Description: store the var_dump results as a text file.
-Version: 0.8
+Version: 0.8.1
 Author: Yuya Tajima
 */
 
@@ -19,11 +19,11 @@ Author: Yuya Tajima
  * @type int $index the number of index should be tarced. default 3.
  * @type bool $echo Whether to output the $dump to a Web Browser. default false.
  * @type bool $extra Whether to show more information. default false.
+ * @type mixed (string|PHP_EOL) $LF End Of Line symbol. default PHP_EOL.
  *
  * @author Yuya Tajima
  * @link https://github.com/yuya-tajima/console_log
  */
-
 if ( ! function_exists( 'console_log' ) ) {
   function console_log( $dump, array $args = array() ) {
 
@@ -70,17 +70,31 @@ EOD;
       $debug_log = include( $debug_path_file );
     }
 
-    if ( defined( 'CONSOLE_LOG_FILE' ) && is_string( CONSOLE_LOG_FILE ) ) {
+    if ( defined( 'CONSOLE_LOG_FILE' ) ) {
       $debug_log = CONSOLE_LOG_FILE;
     }
 
-    if ( ! file_exists( $debug_log ) ) {
-      error_log( $debug_log . ' does not exist.' );
+    if ( $debug_log && ! is_string( $debug_log ) ) {
+      error_log( $debug_log . ' is invalid string,' );
       return;
+    }
+
+    if ( ! file_exists( $debug_log ) ) {
+      if ( touch( $debug_log ) ) {
+        chmod( $debug_log, 0666 );
+      } else {
+        error_log( $debug_log . ' does not exist. and could not be created.' );
+        return;
+      }
     }
 
     if ( ! is_writable( $debug_log ) ) {
       error_log( $debug_log . ' is not writable. please change the file permission. or use another log file.' );
+      return;
+    }
+
+    if ( ! is_readable( $debug_log ) ) {
+      error_log( $debug_log . ' is not readable. please change the file permission. or use another log file.' );
       return;
     }
 
@@ -99,15 +113,6 @@ EOD;
       return;
     }
 
-    if( ! file_exists( $debug_log ) ){
-      if ( touch( $debug_log ) ) {
-        chmod( $debug_log, 0666 );
-      } else {
-        error_log( $debug_log . ' could not be created.' );
-        return;
-      }
-    }
-
     ob_start();
     echo '*********************************************' . $args['LF'];
     _console_log_backtrace( $args['index'], $args['extra'], $args['LF'] );
@@ -119,9 +124,7 @@ EOD;
     var_dump( $dump );
     echo $args['LF'];
     echo '*********************************************' . $args['LF'];
-
     $out = ob_get_contents();
-
     ob_end_clean();
 
     file_put_contents( $debug_log, $out, FILE_APPEND | LOCK_EX );
@@ -146,7 +149,7 @@ EOD;
     echo 'using memory(MB)  : ' . round( memory_get_usage() / ( 1024 * 1024 ), 2 ) . ' MB' . $LF;
     echo $LF;
 
-    if ( $extra ) {
+    if ( $extra && ! empty( $_SERVER ) ) {
       var_dump( $_SERVER );
     }
 
@@ -155,7 +158,7 @@ EOD;
       echo isset( $debug_traces[$_index]['line'] ) ? 'file_line : ' . $debug_traces[$_index]['line'] . $LF : '';
       echo isset( $debug_traces[$_index]['class'] ) ? 'class_name : ' . $debug_traces[$_index]['class'] . $LF : '';
       echo isset( $debug_traces[$_index]['function'] ) ? 'func_name : ' . $debug_traces[$_index]['function'] . $LF : '';
-      if ( isset( $debug_traces[$_index]['args'] ) && ( $args = $debug_traces[$_index]['args'] ) )  {
+      if ( isset( $debug_traces[$_index]['args'] ) && ( $args = $debug_traces[$_index]['args'] ) ) {
         $arg_string = trim( _getStringFromNotString( $args ) );
         echo 'func_args : ' . $arg_string . $LF;
       }
