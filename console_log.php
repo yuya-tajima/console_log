@@ -37,6 +37,7 @@ if ( ! function_exists( 'console_log' ) ) {
       'index'    => 3,
       'echo'     => false,
       'extra'    => false,
+      'LF'       => PHP_EOL,
     );
 
     $args = array_merge( $defaults, $args );
@@ -84,7 +85,7 @@ EOD;
     }
 
     $file_size = filesize( $debug_log );
-    $file_size = (int) floor( $file_size / 1024 ) ;
+    $file_size = (int) ( $file_size / 1024 ) ;
 
     // if the log file size over 10MB, stop this flow immediately.
     if ( $file_size > 10240 ) {
@@ -102,21 +103,22 @@ EOD;
       if ( touch( $debug_log ) ) {
         chmod( $debug_log, 0666 );
       } else {
+        error_log( $debug_log . ' could not be created.' );
         return;
       }
     }
 
     ob_start();
-    echo '*********************************************' . PHP_EOL;
-    _console_log_backtrace( $args['index'], PHP_EOL, $args['extra'] );
+    echo '*********************************************' . $args['LF'];
+    _console_log_backtrace( $args['index'], $args['extra'], $args['LF'] );
     if( defined( 'DOING_AJAX' ) && DOING_AJAX ){
-      echo 'Ajax is running! by WordPress.' . PHP_EOL . PHP_EOL;
+      echo 'Ajax is running! by WordPress.' . $args['LF'] . $args['LF'];
       var_dump($_POST);
-      echo PHP_EOL;
+      echo $args['LF'];
     }
     var_dump( $dump );
-    echo PHP_EOL;
-    echo '*********************************************' . PHP_EOL;
+    echo $args['LF'];
+    echo '*********************************************' . $args['LF'];
 
     $out = ob_get_contents();
 
@@ -131,7 +133,7 @@ EOD;
     }
   }
 
-  function _console_log_backtrace( $index, $extra = false, $LF = PHP_EOL  ) {
+  function _console_log_backtrace( $index, $extra = false, $LF = PHP_EOL ) {
 
     $debug_traces = debug_backtrace();
 
