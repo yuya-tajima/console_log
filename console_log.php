@@ -17,7 +17,7 @@ Author: Yuya Tajima
  *                      If false, run when $_GET['debug'] variable is setting.
  * @type bool $wp_ajax Whether to run when WordPress Ajax is running. default true.
  * @type int $index the number of index should be tarced. default 3.
- * @type bool $echo Whether to output the $dump. default false.
+ * @type bool $echo Whether to output the $dump to a Web Browser. default false.
  * @type bool $extra Whether to show more information. default false.
  *
  * @author Yuya Tajima
@@ -125,13 +125,13 @@ EOD;
     file_put_contents( $debug_log, $out, FILE_APPEND | LOCK_EX );
 
     //if headers have not already been sent and $args['echo'] is true
-    //echo $dump
+    //output the $dump to a Web Browser
     if( $args['echo'] && ! headers_sent() ){
       echo nl2br( htmlspecialchars( $out, ENT_QUOTES, 'UTF-8' ) );
     }
   }
 
-  function _console_log_backtrace( $index, $LF = PHP_EOL, $extra = false  ) {
+  function _console_log_backtrace( $index, $extra = false, $LF = PHP_EOL  ) {
 
     $debug_traces = debug_backtrace();
 
