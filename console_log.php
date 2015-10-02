@@ -52,10 +52,9 @@ if ( ! function_exists( 'console_log' ) ) {
 
     $debug_log = '';
 
-
     if ( defined( 'WP_CONTENT_DIR' ) ) {
 
-      $debug_path_file = WP_CONTENT_DIR . '/console_log.php';
+      $debug_path_file = _removeNullByte( WP_CONTENT_DIR . '/console_log.php' );
 
       if ( ! file_exists( $debug_path_file ) ) {
         touch( $debug_path_file );
@@ -73,6 +72,8 @@ EOD;
     if ( defined( 'CONSOLE_LOG_FILE' ) ) {
       $debug_log = CONSOLE_LOG_FILE;
     }
+
+    $debug_log = _removeNullByte( $debug_log );
 
     if ( $debug_log && ! is_string( $debug_log ) ) {
       error_log( $debug_log . ' is invalid string,' );
@@ -200,5 +201,12 @@ EOD;
     }
 
     return $string;
+  }
+
+  function _removeNullByte( $string ) {
+    if ( is_array( $string ) ){
+      return array_map( '_removeNullByte', $string );
+    }
+    return str_replace( "\0", '', $string );
   }
 }
