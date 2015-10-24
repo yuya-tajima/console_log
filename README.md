@@ -1,9 +1,9 @@
 # console_log
 This is a debug script for php programming.Especially,  WordPress.
 
-## Usage ##
+## Sample usage ##
 
-Like var_dump().
+Like var_dump(), but console_log() write logs to a prepared file:
 
 ```php
 <?php
