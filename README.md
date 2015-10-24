@@ -6,9 +6,9 @@ This is a debug script for php programming.Especially,  WordPress.
 Like var_dump().
 
 ```php
-  <?php
-    // something to debug vriable or literal value.
-    $foo = 'a';
-    console_log($foo);
+<?php
+// something to debug vriable or literal value.
+$foo = 'a';
+console_log($foo);
 ```
 
