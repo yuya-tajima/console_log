@@ -51,15 +51,14 @@ if ( ! function_exists( 'console_log' ) ) {
     }
 
     $debug_log = '';
-
     if ( defined( 'CONSOLE_LOG_FILE' ) && is_string( CONSOLE_LOG_FILE ) ) {
       $debug_log = CONSOLE_LOG_FILE;
     }
 
     $debug_log = _removeNullByte( $debug_log );
 
-    if ( $debug_log && ! is_string( $debug_log ) ) {
-      error_log( $debug_log . ' is invalid string,' );
+    if ( ! $debug_log ) {
+      error_log( 'Debug log file name is invalid.' );
       return;
     }
 
