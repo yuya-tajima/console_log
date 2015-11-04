@@ -2,14 +2,14 @@
 /*
 Plugin Name: Console Log
 Description: store the var_dump results as a text file.
-Version: 0.8.1
+Version: 0.8.2
 Author: Yuya Tajima
 */
 
 /**
  * This is a debugging tool. Store the var_dump results as a text file.
  *
- * @type mixed $dump The data you want to dump.
+ * @type mixed $dump The data you want to dump. default NULL.
  * @param array $args {
  * available arguments.
  *
@@ -25,11 +25,7 @@ Author: Yuya Tajima
  * @link https://github.com/yuya-tajima/console_log
  */
 if ( ! function_exists( 'console_log' ) ) {
-  function console_log( $dump, array $args = array() ) {
-
-    if ( ! isset( $dump ) ) {
-      $dump = NULL;
-    }
+  function console_log( $dump = NULL, array $args = array() ) {
 
     $defaults = array(
       'any_time' => true,
