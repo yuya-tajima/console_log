@@ -2,7 +2,7 @@
 /*
 Plugin Name: Console Log
 Description: store the var_dump results as a text file.
-Version: 0.8.2
+Version: 0.8.3
 Author: Yuya Tajima
 */
 
@@ -20,6 +20,7 @@ Author: Yuya Tajima
  * @type bool $echo Whether to output the $dump to a Web Browser. default false.
  * @type bool $extra Whether to show more information. default false.
  * @type mixed (string|PHP_EOL) $LF End Of Line symbol. default PHP_EOL.
+ * @type string $time_zone sets the default timezone that is used for time logging. default 'Asia/Tokyo'.
  *
  * @author Yuya Tajima
  * @link https://github.com/yuya-tajima/console_log
@@ -28,12 +29,13 @@ if ( ! function_exists( 'console_log' ) ) {
   function console_log( $dump = NULL, array $args = array() ) {
 
     $defaults = array(
-      'any_time' => true,
-      'wp_ajax'  => true,
-      'index'    => 3,
-      'echo'     => false,
-      'extra'    => false,
-      'LF'       => PHP_EOL,
+      'any_time'  => true,
+      'wp_ajax'   => true,
+      'index'     => 3,
+      'echo'      => false,
+      'extra'     => false,
+      'LF'        => PHP_EOL,
+      'time_zone' => 'Asia/Tokyo',
     );
 
     $args = array_merge( $defaults, $args );
@@ -94,7 +96,7 @@ if ( ! function_exists( 'console_log' ) ) {
 
     ob_start();
     echo '*********************************************' . $args['LF'];
-    _console_log_backtrace( $args['index'], $args['extra'], $args['LF'] );
+    _console_log_backtrace( $args['index'], $args['extra'], $args['time_zone'], $args['LF'] );
     if( defined( 'DOING_AJAX' ) && DOING_AJAX ){
       echo 'Ajax is running! by WordPress.' . $args['LF'] . $args['LF'];
       var_dump($_POST);
@@ -115,14 +117,14 @@ if ( ! function_exists( 'console_log' ) ) {
     }
   }
 
-  function _console_log_backtrace( $index, $extra = false, $LF = PHP_EOL ) {
+  function _console_log_backtrace( $index, $extra = false, $time_zone = 'Asia/Tokyo', $LF = PHP_EOL  ) {
 
     $debug_traces = debug_backtrace();
 
     if ( function_exists('date_i18n') ) {
       echo 'time              : ' . date_i18n( 'Y-m-d H:i:s' ) . $LF;
     } else {
-      date_default_timezone_set( 'Asia/Tokyo' );
+      date_default_timezone_set( $time_zone );
       echo 'time              : ' . date( 'Y-m-d H:i:s' ) . $LF;
     }
     echo 'using memory(MB)  : ' . round( memory_get_usage() / ( 1024 * 1024 ), 2 ) . ' MB' . $LF;
