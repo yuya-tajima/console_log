@@ -124,8 +124,10 @@ if ( ! function_exists( 'console_log' ) ) {
     if ( function_exists('date_i18n') ) {
       echo 'time              : ' . date_i18n( 'Y-m-d H:i:s' ) . $LF;
     } else {
+      $default_timezone = date_default_timezone_get();
       date_default_timezone_set( $time_zone );
       echo 'time              : ' . date( 'Y-m-d H:i:s' ) . $LF;
+      date_default_timezone_set( $default_timezone );
     }
     echo 'using memory(MB)  : ' . round( memory_get_usage() / ( 1024 * 1024 ), 2 ) . ' MB' . $LF;
     echo $LF;
