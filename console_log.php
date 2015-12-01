@@ -2,7 +2,7 @@
 /*
 Plugin Name: Console Log
 Description: store the var_dump results as a text file.
-Version: 0.8.3
+Version: 0.8.4
 Author: Yuya Tajima
 */
 
@@ -119,7 +119,8 @@ if ( ! function_exists( 'console_log' ) ) {
 
   function _console_log_backtrace( $index, $extra = false, $time_zone = 'Asia/Tokyo', $LF = PHP_EOL  ) {
 
-    $debug_traces = debug_backtrace();
+    $debug_traces = debug_backtrace( DEBUG_BACKTRACE_PROVIDE_OBJECT, $index + 1 );
+    array_shift($debug_traces);
 
     if ( function_exists('date_i18n') ) {
       echo 'time              : ' . date_i18n( 'Y-m-d H:i:s' ) . $LF;
@@ -129,19 +130,22 @@ if ( ! function_exists( 'console_log' ) ) {
       echo 'time              : ' . date( 'Y-m-d H:i:s' ) . $LF;
       date_default_timezone_set( $default_timezone );
     }
-    echo 'using memory(MB)  : ' . round( memory_get_usage() / ( 1024 * 1024 ), 2 ) . ' MB' . $LF;
+    echo 'using memory(MB)  : ' . round( memory_get_usage(true) / ( 1024 * 1024 ), 2 ) . ' MB' . $LF;
     echo $LF;
 
     if ( $extra && ! empty( $_SERVER ) ) {
       var_dump( $_SERVER );
     }
 
-    for ( $i = 0 ; ( $_index = $index - $i ) > 0 ; $i++ )  {
-      echo isset( $debug_traces[$_index]['file'] ) ? 'file_name : ' . $debug_traces[$_index]['file']. $LF : '';
-      echo isset( $debug_traces[$_index]['line'] ) ? 'file_line : ' . $debug_traces[$_index]['line'] . $LF : '';
-      echo isset( $debug_traces[$_index]['class'] ) ? 'class_name : ' . $debug_traces[$_index]['class'] . $LF : '';
-      echo isset( $debug_traces[$_index]['function'] ) ? 'func_name : ' . $debug_traces[$_index]['function'] . $LF : '';
-      if ( isset( $debug_traces[$_index]['args'] ) && ( $args = $debug_traces[$_index]['args'] ) ) {
+    $current_index = $index;
+    while ( $current_index-- >= 0) {
+      if ( ! isset($debug_traces[$current_index]) ) continue;
+
+      echo isset( $debug_traces[$current_index]['file'] ) ? 'file_name : ' . $debug_traces[$current_index]['file']. $LF : '';
+      echo isset( $debug_traces[$current_index]['line'] ) ? 'file_line : ' . $debug_traces[$current_index]['line'] . $LF : '';
+      echo isset( $debug_traces[$current_index]['class'] ) ? 'class_name : ' . $debug_traces[$current_index]['class'] . $LF : '';
+      echo isset( $debug_traces[$current_index]['function'] ) ? 'func_name : ' . $debug_traces[$current_index]['function'] . $LF : '';
+      if ( isset( $debug_traces[$current_index]['args'] ) && ( $args = $debug_traces[$current_index]['args'] ) ) {
         $arg_string = trim( _getStringFromNotString( $args ) );
         echo 'func_args : ' . $arg_string . $LF;
       }
