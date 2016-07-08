@@ -2,7 +2,7 @@
 /*
 Plugin Name: Console Log
 Description: store the var_dump results as a text file.
-Version: 0.8.4
+Version: 0.8.5
 Author: Yuya Tajima
 */
 
@@ -123,14 +123,19 @@ if ( ! function_exists( 'console_log' ) ) {
     array_shift($debug_traces);
 
     if ( function_exists('date_i18n') ) {
-      echo 'time              : ' . date_i18n( 'Y-m-d H:i:s' ) . $LF;
+      echo 'time               : ' . date_i18n( 'Y-m-d H:i:s' ) . $LF;
     } else {
       $default_timezone = date_default_timezone_get();
       date_default_timezone_set( $time_zone );
-      echo 'time              : ' . date( 'Y-m-d H:i:s' ) . $LF;
+      echo 'time               : ' . date( 'Y-m-d H:i:s' ) . $LF;
       date_default_timezone_set( $default_timezone );
     }
-    echo 'using memory(MB)  : ' . round( memory_get_usage(true) / ( 1024 * 1024 ), 2 ) . ' MB' . $LF;
+    echo 'using memory(MB)   : ' . round( memory_get_usage(true) / ( 1024 * 1024 ), 2 ) . ' MB' . $LF;
+
+    if ( function_exists('timer_stop') ) {
+      echo 'execution time(ms) : ' . timer_stop(0, 5) . $LF;
+    }
+
     echo $LF;
 
     if ( $extra && ! empty( $_SERVER ) ) {
