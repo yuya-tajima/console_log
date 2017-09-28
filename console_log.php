@@ -2,7 +2,7 @@
 /*
 Plugin Name: Console Log
 Description: store the var_dump results as a text file.
-Version: 0.8.5
+Version: 0.8.6
 Author: Yuya Tajima
 */
 
@@ -21,6 +21,7 @@ Author: Yuya Tajima
  * @type bool $extra Whether to show more information. default false.
  * @type mixed (string|PHP_EOL) $LF End Of Line symbol. default PHP_EOL.
  * @type string $time_zone sets the default timezone that is used for time logging. default 'Asia/Tokyo'.
+ * @type bool $display_error Whether to output the last occurred PHP error. default true.
  *
  * @author Yuya Tajima
  * @link https://github.com/yuya-tajima/console_log
@@ -29,13 +30,14 @@ if ( ! function_exists( 'console_log' ) ) {
   function console_log( $dump = NULL, array $args = array() ) {
 
     $defaults = array(
-      'any_time'  => true,
-      'wp_ajax'   => true,
-      'index'     => 3,
-      'echo'      => false,
-      'extra'     => false,
-      'LF'        => PHP_EOL,
-      'time_zone' => 'Asia/Tokyo',
+      'any_time'      => true,
+      'wp_ajax'       => true,
+      'index'         => 3,
+      'echo'          => false,
+      'extra'         => false,
+      'LF'            => PHP_EOL,
+      'time_zone'     => 'Asia/Tokyo',
+      'display_error' => true,
     );
 
     $args = array_merge( $defaults, $args );
@@ -96,7 +98,7 @@ if ( ! function_exists( 'console_log' ) ) {
 
     ob_start();
     echo '*********************************************' . $args['LF'];
-    _console_log_backtrace( $args['index'], $args['extra'], $args['time_zone'], $args['LF'] );
+    _console_log_backtrace( $args );
     if( defined( 'DOING_AJAX' ) && DOING_AJAX ){
       echo 'Ajax is running! by WordPress.' . $args['LF'] . $args['LF'];
       var_dump($_POST);
@@ -105,8 +107,7 @@ if ( ! function_exists( 'console_log' ) ) {
     var_dump( $dump );
     echo $args['LF'];
     echo '*********************************************' . $args['LF'];
-    $out = ob_get_contents();
-    ob_end_clean();
+    $out = ob_get_clean();
 
     file_put_contents( $debug_log, $out, FILE_APPEND | LOCK_EX );
 
@@ -117,7 +118,12 @@ if ( ! function_exists( 'console_log' ) ) {
     }
   }
 
-  function _console_log_backtrace( $index, $extra = false, $time_zone = 'Asia/Tokyo', $LF = PHP_EOL  ) {
+  function _console_log_backtrace( $args  ) {
+
+    $index     = $args['index'];
+    $extra     = $args['extra'];
+    $time_zone = $args['time_zone'];
+    $LF        = $args['LF'];
 
     $debug_traces = debug_backtrace( DEBUG_BACKTRACE_PROVIDE_OBJECT, $index + 1 );
     array_shift($debug_traces);
@@ -132,6 +138,20 @@ if ( ! function_exists( 'console_log' ) ) {
     }
     echo 'using memory(MB)   : ' . round( memory_get_usage(true) / ( 1024 * 1024 ), 2 ) . ' MB' . $LF;
 
+    echo $LF;
+
+    // get error message
+    if ( $last_error = error_get_last() ) {
+      echo 'error message      : '. $last_error['message'] .$LF;
+      echo 'error file         : '. $last_error['file'] .$LF;
+      echo 'error line         : '. $last_error['line'] .$LF;
+    } else {
+      echo 'error              : Nothing!'. $LF;
+    }
+
+    echo $LF;
+
+	// WordPress function
     if ( function_exists('timer_stop') ) {
       echo 'execution time(ms) : ' . timer_stop(0, 5) . $LF;
     }
@@ -143,9 +163,8 @@ if ( ! function_exists( 'console_log' ) ) {
     }
 
     $current_index = $index;
-    while ( $current_index-- >= 0) {
+    while ( $current_index-- >= 0 ) {
       if ( ! isset($debug_traces[$current_index]) ) continue;
-
       echo isset( $debug_traces[$current_index]['file'] ) ? 'file_name : ' . $debug_traces[$current_index]['file']. $LF : '';
       echo isset( $debug_traces[$current_index]['line'] ) ? 'file_line : ' . $debug_traces[$current_index]['line'] . $LF : '';
       echo isset( $debug_traces[$current_index]['class'] ) ? 'class_name : ' . $debug_traces[$current_index]['class'] . $LF : '';
