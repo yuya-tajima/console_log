@@ -2,7 +2,7 @@
 /*
 Plugin Name: Console Log
 Description: store the var_dump results as a text file.
-Version: 0.8.6
+Version: 1.0.0
 Author: Yuya Tajima
 */
 
@@ -18,11 +18,11 @@ Author: Yuya Tajima
  * @type bool $wp_ajax Whether to run when WordPress Ajax is running. default true.
  * @type int $index the number of index should be tarced. default 3.
  * @type bool $echo Whether to output the $dump to a Web Browser. default false.
- * @type bool $extra Whether to show more information. default false.
  * @type mixed (string|PHP_EOL) $LF End Of Line symbol. default PHP_EOL.
  * @type string $time_zone sets the default timezone that is used for time logging. default 'Asia/Tokyo'.
  * @type bool $display_error Whether to output the last occurred PHP error. default true.
- *
+ * @type bool $backtrace Whether to show backtrace. default false.
+ * }
  * @author Yuya Tajima
  * @link https://github.com/yuya-tajima/console_log
  */
@@ -34,10 +34,10 @@ if ( ! function_exists( 'console_log' ) ) {
       'wp_ajax'       => true,
       'index'         => 3,
       'echo'          => false,
-      'extra'         => false,
       'LF'            => PHP_EOL,
       'time_zone'     => 'Asia/Tokyo',
       'display_error' => true,
+      'backtrace'     => false,
     );
 
     $args = array_merge( $defaults, $args );
@@ -81,39 +81,72 @@ if ( ! function_exists( 'console_log' ) ) {
       return;
     }
 
-    $file_size = filesize( $debug_log );
-    $file_size = (int) ( $file_size / 1024 ) ;
-
-    // if the log file size over 10MB, stop this flow immediately.
-    if ( $file_size > 10240 ) {
-      $fp = fopen( $debug_log, 'w+b' );
-      if ( is_resource( $fp ) ) {
+    // if the log file size over 10MB, trucate log file
+    try {
+        $fp = fopen( $debug_log, 'r+' );
         flock( $fp, LOCK_EX );
+
+        $fstat = fstat($fp);
+        $file_size = $fstat['size'];
+
+        if ( $file_size > 10485760 ) {
+            throw new Exception('console log file size is larger than 10MB.');
+        }
+    } catch ( Exception $e ) {
         fflush( $fp );
+        ftruncate( $fp, 0 );
+    } finally {
         flock( $fp, LOCK_UN );
         fclose( $fp );
-      }
-      return;
     }
 
     ob_start();
     echo '*********************************************' . $args['LF'];
-    _console_log_backtrace( $args );
     if( defined( 'DOING_AJAX' ) && DOING_AJAX ){
       echo 'Ajax is running! by WordPress.' . $args['LF'] . $args['LF'];
       var_dump($_POST);
       echo $args['LF'];
     }
+
+    // get error message
+    if ( $last_error = error_get_last() ) {
+      echo 'error message      : '. $last_error['message'] .$args['LF'];
+      echo 'error file         : '. $last_error['file'] .$args['LF'];
+      echo 'error line         : '. $last_error['line'] .$args['LF'];
+    } else {
+      echo 'error              : Nothing!'. $args['LF'];
+    }
+
+    if ( function_exists('date_i18n') ) {
+      echo 'time               : ' . date_i18n( 'Y-m-d H:i:s' ) . $args['LF'];
+    } else {
+      $default_timezone = date_default_timezone_get();
+      date_default_timezone_set( $args['time_zone'] );
+      echo 'time               : ' . date( 'Y-m-d H:i:s' ) . $args['LF'];
+      date_default_timezone_set( $default_timezone );
+    }
+
+    // WordPress function
+    if ( function_exists('timer_stop') ) {
+      echo 'execution time(ms) : ' . timer_stop(0, 5) . $args['LF'];
+    }
+
+    echo 'using memory(MB)   : ' . round( memory_get_usage(true) / ( 1024 * 1024 ), 2 ) . ' MB' . $args['LF'];
+
+    if ( $args['backtrace'] ) {
+        _console_log_backtrace( $args );
+    }
+
+    echo $args['LF'];
     var_dump( $dump );
     echo $args['LF'];
+
     echo '*********************************************' . $args['LF'];
     $out = ob_get_clean();
 
     file_put_contents( $debug_log, $out, FILE_APPEND | LOCK_EX );
 
-    //if headers have not already been sent and $args['echo'] is true
-    //output the $dump to a Web Browser
-    if( $args['echo'] && ! headers_sent() ){
+    if( $args['echo'] ){
       echo nl2br( htmlspecialchars( $out, ENT_QUOTES, 'UTF-8' ) );
     }
   }
@@ -121,46 +154,12 @@ if ( ! function_exists( 'console_log' ) ) {
   function _console_log_backtrace( $args  ) {
 
     $index     = $args['index'];
-    $extra     = $args['extra'];
-    $time_zone = $args['time_zone'];
     $LF        = $args['LF'];
 
     $debug_traces = debug_backtrace( DEBUG_BACKTRACE_PROVIDE_OBJECT, $index + 1 );
     array_shift($debug_traces);
 
-    if ( function_exists('date_i18n') ) {
-      echo 'time               : ' . date_i18n( 'Y-m-d H:i:s' ) . $LF;
-    } else {
-      $default_timezone = date_default_timezone_get();
-      date_default_timezone_set( $time_zone );
-      echo 'time               : ' . date( 'Y-m-d H:i:s' ) . $LF;
-      date_default_timezone_set( $default_timezone );
-    }
-    echo 'using memory(MB)   : ' . round( memory_get_usage(true) / ( 1024 * 1024 ), 2 ) . ' MB' . $LF;
-
     echo $LF;
-
-    // get error message
-    if ( $last_error = error_get_last() ) {
-      echo 'error message      : '. $last_error['message'] .$LF;
-      echo 'error file         : '. $last_error['file'] .$LF;
-      echo 'error line         : '. $last_error['line'] .$LF;
-    } else {
-      echo 'error              : Nothing!'. $LF;
-    }
-
-    echo $LF;
-
-	// WordPress function
-    if ( function_exists('timer_stop') ) {
-      echo 'execution time(ms) : ' . timer_stop(0, 5) . $LF;
-    }
-
-    echo $LF;
-
-    if ( $extra && ! empty( $_SERVER ) ) {
-      var_dump( $_SERVER );
-    }
 
     $current_index = $index;
     while ( $current_index-- >= 0 ) {
