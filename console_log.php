@@ -1,4 +1,5 @@
 <?php
+declare(strict_types=1);
 /*
 Plugin Name: Console Log
 Description: store the var_dump results as a text file.
@@ -27,9 +28,9 @@ Author: Yuya Tajima
  * @link https://github.com/yuya-tajima/console_log
  */
 if ( ! function_exists( 'console_log' ) ) {
-  function console_log( $dump = NULL, array $args = array() ) {
+  function console_log(mixed $dump = null, array $args = []): void {
 
-    $defaults = array(
+    $defaults = [
       'any_time'      => true,
       'wp_ajax'       => true,
       'index'         => 3,
@@ -38,7 +39,7 @@ if ( ! function_exists( 'console_log' ) ) {
       'time_zone'     => 'Asia/Tokyo',
       'display_error' => true,
       'backtrace'     => false,
-    );
+    ];
 
     $args = array_merge( $defaults, $args );
 
@@ -81,23 +82,30 @@ if ( ! function_exists( 'console_log' ) ) {
       return;
     }
 
-    // if the log file size over 10MB, trucate log file
+    // if the log file size over 10MB, truncate log file
     try {
-        $fp = fopen( $debug_log, 'r+' );
+        $fp = fopen( $debug_log, 'c+' );
+        if ( $fp === false ) {
+            throw new RuntimeException('Failed to open log file.');
+        }
         flock( $fp, LOCK_EX );
 
-        $fstat = fstat($fp);
-        $file_size = $fstat['size'];
+        $fstat     = fstat( $fp );
+        $file_size = $fstat['size'] ?? 0;
 
         if ( $file_size > 10485760 ) {
-            throw new Exception('console log file size is larger than 10MB.');
+            throw new RuntimeException('console log file size is larger than 10MB.');
         }
-    } catch ( Exception $e ) {
-        fflush( $fp );
-        ftruncate( $fp, 0 );
+    } catch ( Throwable $e ) {
+        if ( isset( $fp ) && is_resource( $fp ) ) {
+            fflush( $fp );
+            ftruncate( $fp, 0 );
+        }
     } finally {
-        flock( $fp, LOCK_UN );
-        fclose( $fp );
+        if ( isset( $fp ) && is_resource( $fp ) ) {
+            flock( $fp, LOCK_UN );
+            fclose( $fp );
+        }
     }
 
     ob_start();
@@ -151,7 +159,7 @@ if ( ! function_exists( 'console_log' ) ) {
     }
   }
 
-  function _console_log_backtrace( $args  ) {
+  function _console_log_backtrace(array $args): void {
 
     $index     = $args['index'];
     $LF        = $args['LF'];
@@ -168,15 +176,15 @@ if ( ! function_exists( 'console_log' ) ) {
       echo isset( $debug_traces[$current_index]['line'] ) ? 'file_line : ' . $debug_traces[$current_index]['line'] . $LF : '';
       echo isset( $debug_traces[$current_index]['class'] ) ? 'class_name : ' . $debug_traces[$current_index]['class'] . $LF : '';
       echo isset( $debug_traces[$current_index]['function'] ) ? 'func_name : ' . $debug_traces[$current_index]['function'] . $LF : '';
-      if ( isset( $debug_traces[$current_index]['args'] ) && ( $args = $debug_traces[$current_index]['args'] ) ) {
-        $arg_string = trim( _getStringFromNotString( $args ) );
+      if ( isset( $debug_traces[$current_index]['args'] ) && ( $traceArgs = $debug_traces[$current_index]['args'] ) ) {
+        $arg_string = trim( _getStringFromNotString( $traceArgs ) );
         echo 'func_args : ' . $arg_string . $LF;
       }
       echo $LF;
     }
   }
 
-  function _getStringFromNotString ( $arg )
+  function _getStringFromNotString(mixed $arg): string
   {
     $string = '';
     if ( is_array( $arg ) ) {
@@ -212,7 +220,7 @@ if ( ! function_exists( 'console_log' ) ) {
     return $string;
   }
 
-  function _removeNullByte( $string ) {
+  function _removeNullByte(string|array $string): string|array {
     if ( is_array( $string ) ){
       return array_map( '_removeNullByte', $string );
     }
